@@ -3,13 +3,22 @@ import torch
 import numpy as np
 
 
-class DiagonalGaussianDistribution:
+class AbastractDistribution:
+    def __init__(self):
+        self.logvar = None
+        self.var = None
+        self.std = None
+        self.mean = None
+
+
+class DiagonalGaussianDistribution(AbastractDistribution):
     def __init__(
         self,
         parameters: torch.Tensor,  # b, z_c, h, w
         deterministic: bool = False,
     ):
         super().__init__()
+        self.parameters = parameters
         self.mean, self.logvar = torch.chunk(parameters, 2, dim=1)
         self.logvar = torch.clamp(self.logvar, -30.0, 20.0)
         self.deterministic = deterministic
@@ -26,11 +35,15 @@ class DiagonalGaussianDistribution:
             torch.randn(self.mean.shape).to(device=self.parameters.device)
         return x
 
-    # regularization (penalty) term
+    def mode(self):
+        return self.mean
+
+    # regularization (penalty) term during training phase
+
     def kl(
         self,
         # other distribution
-        other: Optional[DiagonalGaussianDistribution] = None,
+        other: Optional[AbastractDistribution] = None,
     ):
         if self.deterministic:
             return torch.Tensor([0.])
@@ -83,6 +96,3 @@ class DiagonalGaussianDistribution:
             torch.pow(sample - self.mean, 2) / self.var,
             dim=dims
         )
-
-    def mode(self):
-        return self.mean

@@ -1,24 +1,19 @@
-from typing import Optional
+from typing import Optional, List
 import torch
 import torch.nn as nn
-import pytorch_lightning as pl
-import torch.nn.functional as F
 
-from models.modules.diffusionmodules import Encoder, Decoder
-from models.modules.distributions.distributions import DiagonalGaussianDistribution
+from ldm.modules.diffusionmodules.model import Encoder, Decoder
+from ldm.modules.distributions.distributions import DiagonalGaussianDistribution
 
 
 class AutoencoderKL(nn.Module):
     def __init__(
         self,
         ddconfig,
-        lossconfig,
-        embed_dim,
+        embed_dim: int,
         ckpt_path: Optional[str] = None,
         ignore_keys: List[str] = [],
         image_key: str = "image",
-        colorize_nlabels=None,
-        monitor=None,
     ):
         super().__init__()
         self.encoder = Encoder(**ddconfig)
@@ -41,9 +36,10 @@ class AutoencoderKL(nn.Module):
     def init_from_ckpt(
         self,
         path: str,
-        ignore_keys=[],
+        ignore_keys: List[Optional[str]] = [],
     ):
-        sd = torch.load(path, map_location="cpu")["state_dict"]
+        sd = torch.load(path, map_location="cpu",
+                        weights_only=False)["state_dict"]
         keys = list(sd.keys())
         for k in keys:
             for ik in ignore_keys:
